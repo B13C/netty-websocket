@@ -1,7 +1,6 @@
 package com.britton.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.log4j.PropertyConfigurator;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -17,7 +16,6 @@ public class PropertiesUtil {
         log.info(System.getProperty("user.dir"));
         InputStream in = PropertiesUtil.class.getResourceAsStream(fileName);
         if (in == null) {
-            PropertyConfigurator.configure(System.getProperty("user.dir") + "/config/log4j.properties");
             String filePath = System.getProperty("user.dir") + "/config" + fileName;
             try {
                 in = new FileInputStream(filePath);

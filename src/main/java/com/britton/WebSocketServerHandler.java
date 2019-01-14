@@ -226,7 +226,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                 Request serviceRequest = new Request();
                 serviceRequest.setEventId(EnumCode.HEART_SEND.getCode());
                 serviceRequest.setRequestId(request.getRequestId());
-                serviceRequest.setObject("{\"msg\":\"success\"}");
+                serviceRequest.setMessage("{\"msg\":\"success\"}");
                 try {
                     entry.getValue().getSendService().send(serviceRequest);
                 } catch (Exception e) {
@@ -251,7 +251,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
             response.setMessage("唯一标识不能为空");
         } else if (StringUtils.isEmpty(request.getSenderType())) {
             response.setMessage("发送者类型不能为空");
-        } else if (StringUtils.isEmpty(request.getObject())) {
+        } else if (StringUtils.isEmpty(request.getMessage())) {
             response.setMessage("数据对象不能为空");
         } else if (StringUtils.isEmpty(request.getUserId())) {
             response.setMessage("用户id不能为空");
@@ -269,7 +269,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                                 log.warn("回调发送消息给客户端异常", e);
                             }
                             response.setStatus(true);
-                            response.setMessage("单发:发送消息成功");
+                            response.setMessage("发送消息成功");
                         }
                     }
                 }
@@ -289,7 +289,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                     }
                 }
                 response.setStatus(true);
-                response.setMessage("群发:发送消息成功");
+                response.setMessage("发送消息成功");
             }
         }
         return response;
@@ -425,7 +425,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         serviceRequest.setReceiverId(request.getReceiverId());
         serviceRequest.setReceiverType(request.getReceiverType());
         serviceRequest.setEventId(EnumCode.RECEIVE_MESSAGE.getCode());
-        serviceRequest.setObject(request.getObject());
+        serviceRequest.setMessage(request.getMessage());
         return serviceRequest;
     }
 }
