@@ -15,10 +15,10 @@ public class JEDISUtil {
     private static final int REDIS_PORT = Integer.parseInt(PropertiesUtil.getValue(CONFIG_FILE_PATH, "redis_port"));
     private static final String REDIS_IP = PropertiesUtil.getValue(CONFIG_FILE_PATH, "redis_ip");
     private static final String REDIS_PWD = PropertiesUtil.getValue(CONFIG_FILE_PATH, "redis_pwd");
-    private static final String MAX_WAIT_MILLIS = PropertiesUtil.getValue(CONFIG_FILE_PATH, "maxWaitMillis");
-    private static final String TEST_ON_BORROW = PropertiesUtil.getValue(CONFIG_FILE_PATH, "testOnBorrow");
-    private static final String MAX_TOTAL = PropertiesUtil.getValue(CONFIG_FILE_PATH, "maxTotal");
-    private static final String MAX_IDLE = PropertiesUtil.getValue(CONFIG_FILE_PATH, "maxIdle");
+    private static final String MAX_WAIT_MILLIS = PropertiesUtil.getValue(CONFIG_FILE_PATH, "max_wait_millis");
+    private static final String TEST_ON_BORROW = PropertiesUtil.getValue(CONFIG_FILE_PATH, "test_on_borrow");
+    private static final String MAX_TOTAL = PropertiesUtil.getValue(CONFIG_FILE_PATH, "max_total");
+    private static final String MAX_IDLE = PropertiesUtil.getValue(CONFIG_FILE_PATH, "max_idle");
 
     private static JedisPool pool;
     private static JedisPoolConfig config;

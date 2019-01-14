@@ -40,6 +40,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        log.info("userEventTriggered [{}]", ctx.channel().id());
         super.userEventTriggered(ctx, evt);
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent event = (IdleStateEvent) evt;
@@ -69,14 +70,14 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) {
         counter.getAndIncrement();
-        log.info("channelRegistered[{}]---------------连接注册:{}", ctx.channel().id(), counter.get());
+        log.info("channelRegistered [{}]---------------连接注册:{}", ctx.channel().id(), counter.get());
         SendServiceImpl.register(ctx.channel().id().toString(), new MessageInfo("", "", "", null), "1");
     }
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
         super.channelUnregistered(ctx);
-        log.info("close[{}]---------------连接注销:{}", ctx.channel().id(), counter.get());
+        log.info("channelUnregistered [{}]---------------连接注销", ctx.channel().id());
         logout(ctx);
         SendServiceImpl.logout(ctx.channel().id().toString());
         for (Entry<String, MessageInfo> entry : SendServiceImpl.userWatchMap.entrySet()) {
@@ -86,13 +87,14 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        log.info("channelActive [{}]", ctx.channel().id());
         super.channelActive(ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         counter.getAndDecrement();
-        log.info("channelInactive[{}]---------------连接断开:{}", ctx.channel().id(), counter.get());
+        log.info("channelInactive [{}]---------------连接断开:{}", ctx.channel().id(), counter.get());
         logout(ctx);
         SendServiceImpl.logout(ctx.channel().id().toString());
     }
@@ -101,18 +103,20 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         log.info(cause.getMessage());
         ctx.close();
-        log.info("exceptionCaught[{}]---------------异常", ctx.channel().id());
+        log.info("exceptionCaught [{}]---------------异常", ctx.channel().id());
         logout(ctx);
         SendServiceImpl.logout(ctx.channel().id().toString());
     }
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
+        log.info("channelReadComplete [{}]", ctx.channel().id());
         ctx.flush();
     }
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Object msg) {
+        log.info("channelRead0 [{}]", ctx.channel().id());
         if ((msg instanceof FullHttpRequest)) {
             handleHttpRequest(ctx, (FullHttpRequest) msg);
         } else if ((msg instanceof WebSocketFrame)) {
@@ -127,6 +131,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @param request
      */
     private void handleHttpRequest(ChannelHandlerContext ctx, FullHttpRequest request) {
+        log.info("handleHttpRequest [{}]", ctx.channel().id());
         if ((!request.decoderResult().isSuccess()) || (!"websocket".equals(request.headers().get("Upgrade")))) {
             sendHttpResponse(ctx, request, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.BAD_REQUEST));
             return;
@@ -153,6 +158,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @return
      */
     private Response online(ChannelHandlerContext ctx, Request request) {
+        log.info("online [{}]", ctx.channel().id());
         Response response = new Response();
         response.setEventId(request.getEventId());
         response.setStatus(false);
@@ -193,6 +199,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @return
      */
     private Response offline(ChannelHandlerContext ctx, Request request) {
+        log.info("offline [{}]", ctx.channel().id());
         Response response = new Response();
         response.setEventId(request.getEventId());
         response.setStatus(false);
@@ -215,6 +222,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @throws Exception
      */
     private void heartSend(ChannelHandlerContext ctx, Request request) throws Exception {
+        log.info("heartSend [{}]", ctx.channel().id());
         Response response = new Response();
         response.setEventId(request.getEventId());
         if (StringUtils.isEmpty(request.getRequestId())) {
@@ -244,6 +252,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @return
      */
     private Response sendMessage(ChannelHandlerContext ctx, Request request) {
+        log.info("sendMessage [{}]", ctx.channel().id());
         Response response = new Response();
         response.setEventId(request.getEventId());
         response.setStatus(false);
@@ -302,6 +311,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @param frame
      */
     private void handleWebSocketFrame(ChannelHandlerContext ctx, WebSocketFrame frame) {
+        log.info("handleWebSocketFrame [{}]", ctx.channel().id());
         if ((frame instanceof CloseWebSocketFrame)) {
             this.handShaker.close(ctx.channel(), (CloseWebSocketFrame) frame.retain());
             return;
@@ -362,6 +372,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @param response
      */
     private static void sendHttpResponse(ChannelHandlerContext ctx, FullHttpRequest request, FullHttpResponse response) {
+        log.info("sendHttpResponse [{}]", ctx.channel().id());
         if (response.status().code() != EnumCode.SUCCESS.getCode()) {
             ByteBuf buf = Unpooled.copiedBuffer(response.status().toString(), io.netty.util.CharsetUtil.UTF_8);
             response.content().writeBytes(buf);
@@ -382,6 +393,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @throws HandshakeException
      */
     public void sendWebSocket(ChannelHandlerContext ctx, String msg) throws HandshakeException {
+        log.info("sendWebSocket [{}]", ctx.channel().id());
         if ((ctx == null) || (ctx.isRemoved())) {
             throw new HandshakeException("尚未握手成功，无法向客户端发送WebSocket消息");
         }
@@ -405,6 +417,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @param ctx
      */
     private void logout(ChannelHandlerContext ctx) {
+        log.info("logout [{}]", ctx.channel().id());
         MessageInfo info = SendServiceImpl.userWatchMap.get(ctx.channel().id().toString());
         if (info != null && StringUtils.isNotBlank(info.getUserId()) && checkSenderType(info)) {
             JEDISUtil.publishMsg("logout", info.getUserId(), 0);
@@ -428,7 +441,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         serviceRequest.setMessage(request.getMessage());
         return serviceRequest;
     }
-
 
     /**
      * 检测发送者的类型
