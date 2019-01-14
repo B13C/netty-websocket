@@ -1,8 +1,8 @@
 package com.britton.util;
 
 import com.alibaba.fastjson.JSONObject;
+import io.netty.util.internal.StringUtil;
 import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
 
 @Data
 public class Request {
@@ -15,7 +15,7 @@ public class Request {
     private String message;
 
     public static Request create(String json) {
-        if (!StringUtils.isEmpty(json)) {
+        if (!StringUtil.isNullOrEmpty(json)) {
             return JSONObject.parseObject(json, Request.class);
         }
         return null;
