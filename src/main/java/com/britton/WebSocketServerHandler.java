@@ -46,7 +46,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
             MessageInfo info = SendServiceImpl.userWatchMap.get(ctx.channel().id().toString());
             if (event.state().equals(IdleState.READER_IDLE)) {
                 if (info != null) {
-                    if (("2".equals(info.getSenderType())) || ("3".equals(info.getSenderType()))) {
+                    if (checkSenderType(info)) {
                         ctx.close();
                     }
                 } else {
@@ -54,7 +54,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                 }
             } else if (event.state().equals(IdleState.WRITER_IDLE)) {
                 if (info != null) {
-                    if (("2".equals(info.getSenderType())) || ("3".equals(info.getSenderType()))) {
+                    if (checkSenderType(info)) {
                         ctx.channel().writeAndFlush(new TextWebSocketFrame("ping"));
                     }
                 } else {
@@ -76,7 +76,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
         super.channelUnregistered(ctx);
-        log.info("close[{}]---------------注销", ctx.channel().id());
+        log.info("close[{}]---------------连接注销:{}", ctx.channel().id(), counter.get());
         logout(ctx);
         SendServiceImpl.logout(ctx.channel().id().toString());
         for (Entry<String, MessageInfo> entry : SendServiceImpl.userWatchMap.entrySet()) {
@@ -175,7 +175,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                 response.setMessage("注册成功");
                 MessageInfo info = SendServiceImpl.userWatchMap.get(ctx.channel().id().toString());
                 if (StringUtils.isNotBlank(info.getUserId())) {
-                    if (("2".equals(info.getSenderType())) || ("3".equals(info.getSenderType()))) {
+                    if (checkSenderType(info)) {
                         JEDISUtil.publishMsg("login", request.getUserId(), 0);
                         log.info("{}---------------注册成功-----{}", channelId, "login-" + request.getUserId());
                     }
@@ -192,7 +192,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      * @param request
      * @return
      */
-    private Response downLine(ChannelHandlerContext ctx, Request request) {
+    private Response offline(ChannelHandlerContext ctx, Request request) {
         Response response = new Response();
         response.setEventId(request.getEventId());
         response.setStatus(false);
@@ -327,7 +327,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                 sendWebSocket(ctx, response.toJson());
                 this.sessionId = ctx.channel().id().toString();
             } else if (EnumCode.DOWN_LINE.getCode() == request.getEventId()) {
-                response = downLine(ctx, request);
+                response = offline(ctx, request);
                 sendWebSocket(ctx, response.toJson());
                 ctx.channel().close();
                 this.sessionId = ctx.channel().id().toString();
@@ -406,7 +406,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
      */
     private void logout(ChannelHandlerContext ctx) {
         MessageInfo info = SendServiceImpl.userWatchMap.get(ctx.channel().id().toString());
-        if (info != null && StringUtils.isNotBlank(info.getUserId()) && (("2".equals(info.getSenderType())) || ("3".equals(info.getSenderType())))) {
+        if (info != null && StringUtils.isNotBlank(info.getUserId()) && checkSenderType(info)) {
             JEDISUtil.publishMsg("logout", info.getUserId(), 0);
             log.info("{}---------------注销成功-----{}", ctx.channel().id().toString(), "logout-" + info.getUserId());
         }
@@ -427,5 +427,16 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         serviceRequest.setEventId(EnumCode.RECEIVE_MESSAGE.getCode());
         serviceRequest.setMessage(request.getMessage());
         return serviceRequest;
+    }
+
+
+    /**
+     * 检测发送者的类型
+     *
+     * @param info
+     * @return
+     */
+    private boolean checkSenderType(MessageInfo info) {
+        return ("2".equals(info.getSenderType())) || ("3".equals(info.getSenderType()));
     }
 }
