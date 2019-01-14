@@ -29,18 +29,25 @@ public class SendServiceImpl implements SendService {
         this.name = name;
     }
 
+    /**
+     * 注册心channel
+     *
+     * @param channelId
+     * @param messageInfo
+     * @param type
+     * @return
+     */
     public static boolean register(String channelId, MessageInfo messageInfo, String type) {
         if (StringUtils.isEmpty(channelId)) {
             return false;
         }
         if (userWatchMap.containsKey(channelId)) {
             for (Entry<String, MessageInfo> entry : userWatchMap.entrySet()) {
-                        if (messageInfo.getRequestId().equals((entry.getValue()).getRequestId())) {
-                            return false;
+                if (messageInfo.getRequestId().equals((entry.getValue()).getRequestId())) {
+                    return false;
                 }
             }
         }
-
         userWatchMap.put(channelId, messageInfo);
         if ("2".equals(type)) {
             int i = 0;
@@ -54,6 +61,12 @@ public class SendServiceImpl implements SendService {
         return true;
     }
 
+    /**
+     * 注销（退出）
+     *
+     * @param channelId
+     * @return
+     */
     public static boolean logout(String channelId) {
         if ((StringUtils.isEmpty(channelId)) || (!userWatchMap.containsKey(channelId))) {
             return false;
@@ -63,6 +76,12 @@ public class SendServiceImpl implements SendService {
         return true;
     }
 
+    /**
+     * 发送信息
+     *
+     * @param request
+     * @throws Exception
+     */
     public void send(Request request) throws Exception {
         if ((this.ctx == null) || (this.ctx.isRemoved())) {
             throw new Exception("尚未握手成功，无法向客户端发送WebSocket消息");
@@ -70,13 +89,23 @@ public class SendServiceImpl implements SendService {
         this.ctx.channel().writeAndFlush(new TextWebSocketFrame(request.toJson()));
     }
 
-    public void kill() throws Exception {
+    /**
+     * 关闭连接
+     *
+     * @throws Exception
+     */
+    public void close() throws Exception {
         if ((this.ctx == null) || (this.ctx.isRemoved())) {
             throw new Exception("尚未握手成功，无法向客户端发送WebSocket消息");
         }
         this.ctx.close();
     }
 
+    /**
+     * 下线通知
+     *
+     * @param channelId
+     */
     public static void notifyDownline(String channelId) {
         for (Entry<String, MessageInfo> entry : userWatchMap.entrySet()) {
             Request serviceRequest = new Request();

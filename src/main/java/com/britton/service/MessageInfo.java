@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class MessageInfo {
+    
     private String userId;
 
     private String senderType;
