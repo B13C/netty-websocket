@@ -6,8 +6,11 @@ import lombok.Data;
 @Data
 public class Response {
     private String requestId;
+
     private int eventId;
+
     private boolean status;
+
     private String message;
 
     public String toJson() {

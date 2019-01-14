@@ -7,11 +7,17 @@ import lombok.Data;
 @Data
 public class Request {
     private int eventId;
+
     private String requestId;
+
     private String senderType;
+
     private String receiverId;
+
     private String receiverType;
+
     private String userId;
+
     private String message;
 
     public static Request create(String json) {
