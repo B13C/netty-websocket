@@ -118,6 +118,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     public void channelRead0(ChannelHandlerContext ctx, Object msg) {
         log.info("channelRead0 [{}]", ctx.channel().id());
         if ((msg instanceof FullHttpRequest)) {
+            System.out.println("channelRead0 --- FullHttpRequest");
             handleHttpRequest(ctx, (FullHttpRequest) msg);
         } else if ((msg instanceof WebSocketFrame)) {
             handleWebSocketFrame(ctx, (WebSocketFrame) msg);
