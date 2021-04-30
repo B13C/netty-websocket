@@ -8,6 +8,10 @@ import java.util.Properties;
 
 @Slf4j
 public class PropertiesUtil {
+    private PropertiesUtil() {
+        
+    }
+
     public static String getValue(String fileName, String key) {
         try {
             log.info(System.getProperty("user.dir"));

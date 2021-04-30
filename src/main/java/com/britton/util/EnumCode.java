@@ -9,8 +9,8 @@ public enum EnumCode {
     HEART_SEND(1005, "心跳包"),
     API_SEND(1006, "API");
 
-    private String msg;
-    private Integer code;
+    private final String msg;
+    private final Integer code;
 
     EnumCode(Integer code, String msg) {
         this.msg = msg;

@@ -1,5 +1,6 @@
 package com.britton.service.impl;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.britton.service.MessageInfo;
 import com.britton.service.SendService;
 import com.britton.util.EnumCode;
@@ -8,7 +9,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,7 +38,7 @@ public class SendServiceImpl implements SendService {
      * @return
      */
     public static boolean register(String channelId, MessageInfo messageInfo, String type) {
-        if (StringUtils.isEmpty(channelId)) {
+        if (CharSequenceUtil.isEmpty(channelId)) {
             return false;
         }
         if (userWatchMap.containsKey(channelId)) {
@@ -68,37 +68,12 @@ public class SendServiceImpl implements SendService {
      * @return
      */
     public static boolean logout(String channelId) {
-        if ((StringUtils.isEmpty(channelId)) || (!userWatchMap.containsKey(channelId))) {
+        if ((CharSequenceUtil.isEmpty(channelId)) || (!userWatchMap.containsKey(channelId))) {
             return false;
         }
         userWatchMap.remove(channelId);
         log.info("[{}]下线，在线人数:{}", channelId, userWatchMap.size());
         return true;
-    }
-
-    /**
-     * 发送信息
-     *
-     * @param request
-     * @throws Exception
-     */
-    public void send(Request request) throws Exception {
-        if ((this.ctx == null) || (this.ctx.isRemoved())) {
-            throw new Exception("尚未握手成功，无法向客户端发送WebSocket消息");
-        }
-        this.ctx.channel().writeAndFlush(new TextWebSocketFrame(request.toJson()));
-    }
-
-    /**
-     * 关闭连接
-     *
-     * @throws Exception
-     */
-    public void close() throws Exception {
-        if ((this.ctx == null) || (this.ctx.isRemoved())) {
-            throw new Exception("尚未握手成功，无法向客户端发送WebSocket消息");
-        }
-        this.ctx.close();
     }
 
     /**
@@ -117,5 +92,32 @@ public class SendServiceImpl implements SendService {
                 log.warn("回调发送消息给客户端异常", e);
             }
         }
+    }
+
+    /**
+     * 发送信息
+     *
+     * @param request
+     * @throws Exception
+     */
+    @Override
+    public void send(Request request) throws Exception {
+        if ((this.ctx == null) || (this.ctx.isRemoved())) {
+            throw new Exception("尚未握手成功，无法向客户端发送WebSocket消息");
+        }
+        this.ctx.channel().writeAndFlush(new TextWebSocketFrame(request.toJson()));
+    }
+
+    /**
+     * 关闭连接
+     *
+     * @throws Exception
+     */
+    @Override
+    public void close() throws Exception {
+        if ((this.ctx == null) || (this.ctx.isRemoved())) {
+            throw new Exception("尚未握手成功，无法向客户端发送WebSocket消息");
+        }
+        this.ctx.close();
     }
 }

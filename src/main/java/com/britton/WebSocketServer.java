@@ -21,6 +21,15 @@ public class WebSocketServer {
 
     private static final int WEBSOCKET_PORT = Integer.parseInt(PropertiesUtil.getValue("/mpi.properties", "port"));
 
+    public static void main(String[] args) {
+        WebSocketServer ws = new WebSocketServer();
+        try {
+            ws.run();
+        } catch (Exception e) {
+            log.error("WEBSOCKET SERVER 启动错误", e);
+        }
+    }
+
     private void run() throws InterruptedException {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -29,7 +38,8 @@ public class WebSocketServer {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new ChannelInitializer() {
+                    .childHandler(new ChannelInitializer<Channel>() {
+                        @Override
                         protected void initChannel(Channel channel) throws Exception {
                             ChannelPipeline pipeline = channel.pipeline();
                             pipeline.addLast("http-codec", new HttpServerCodec());
@@ -47,15 +57,6 @@ public class WebSocketServer {
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
-        }
-    }
-
-    public static void main(String[] args) {
-        WebSocketServer ws = new WebSocketServer();
-        try {
-            ws.run();
-        } catch (Exception e) {
-            log.error("WEBSOCKET SERVER 启动错误", e);
         }
     }
 }

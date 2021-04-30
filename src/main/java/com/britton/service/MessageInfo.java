@@ -20,6 +20,7 @@ public class MessageInfo {
         this.sendService = sendService;
     }
     
+    @Override
     public String toString() {
         return "MessageInfo{userId='" + this.userId + '\'' + ", senderType='" + this.senderType + '\'' + ", requestId='" + this.requestId + '\'' + '}';
     }

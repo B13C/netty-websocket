@@ -1,5 +1,6 @@
 package com.britton;
 
+import cn.hutool.core.text.CharSequenceUtil;
 import com.alibaba.fastjson.JSONException;
 import com.alibaba.fastjson.JSONObject;
 import com.britton.exceptions.HandshakeException;
@@ -20,7 +21,6 @@ import io.netty.handler.codec.http.websocketx.*;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> {
 
-    private static AtomicInteger counter = new AtomicInteger(0);
+    private static final AtomicInteger counter = new AtomicInteger(0);
 
     private static final String WEB_SOCKET_PATH = "/ws";
 
@@ -37,6 +37,37 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     private ChannelHandlerContext ctx;
 
     private String sessionId;
+
+    /**
+     * 发送Http相应消息
+     *
+     * @param ctx
+     * @param request
+     * @param response
+     */
+    private static void sendHttpResponse(ChannelHandlerContext ctx, FullHttpRequest request, FullHttpResponse response) {
+        log.info("sendHttpResponse [{}]", ctx.channel().id());
+        if (response.status().code() != EnumCode.SUCCESS.getCode()) {
+            ByteBuf buf = Unpooled.copiedBuffer(response.status().toString(), io.netty.util.CharsetUtil.UTF_8);
+            response.content().writeBytes(buf);
+            buf.release();
+            HttpUtil.setContentLength(response, response.content().readableBytes());
+        }
+        ChannelFuture f = ctx.channel().writeAndFlush(response);
+        if ((!HttpUtil.isKeepAlive(request)) || (response.status().code() != EnumCode.SUCCESS.getCode())) {
+            f.addListener(ChannelFutureListener.CLOSE);
+        }
+    }
+
+    /**
+     * 获取文本WebSocket的地址
+     *
+     * @param req
+     * @return
+     */
+    private static String getWebSocketLocation(FullHttpRequest req) {
+        return "ws://" + req.headers().get(HttpHeaderNames.HOST) + WEB_SOCKET_PATH;
+    }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -164,11 +195,11 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         response.setEventId(request.getEventId());
         response.setStatus(false);
         String channelId = ctx.channel().id().toString();
-        if (StringUtils.isEmpty(request.getRequestId())) {
+        if (CharSequenceUtil.isEmpty(request.getRequestId())) {
             response.setMessage("唯一标识不能为空");
-        } else if (StringUtils.isEmpty(request.getSenderType())) {
+        } else if (CharSequenceUtil.isEmpty(request.getSenderType())) {
             response.setMessage("发送者类型不能为空");
-        } else if (StringUtils.isEmpty(request.getUserId())) {
+        } else if (CharSequenceUtil.isEmpty(request.getUserId())) {
             response.setMessage("用户id不能为空");
         } else if (SendServiceImpl.userWatchMap.containsKey(ctx.channel().id().toString())) {
             if (!"".equals(SendServiceImpl.userWatchMap.get(ctx.channel().id().toString()).getRequestId())) {
@@ -181,9 +212,9 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                 response.setStatus(true);
                 response.setMessage("注册成功");
                 MessageInfo info = SendServiceImpl.userWatchMap.get(ctx.channel().id().toString());
-                if (StringUtils.isNotBlank(info.getUserId())) {
+                if (CharSequenceUtil.isNotBlank(info.getUserId())) {
                     if (checkSenderType(info)) {
-                        JEDISUtil.publishMsg("login", request.getUserId(), 0);
+                        JEDISUtil.publishMsg("login", request.getUserId());
                         log.info("{}---------------注册成功-----{}", channelId, "login-" + request.getUserId());
                     }
                 }
@@ -204,7 +235,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         Response response = new Response();
         response.setEventId(request.getEventId());
         response.setStatus(false);
-        if (StringUtils.isEmpty(request.getRequestId())) {
+        if (CharSequenceUtil.isEmpty(request.getRequestId())) {
             response.setStatus(false);
             response.setMessage("唯一标识不能为空");
         } else {
@@ -226,7 +257,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         log.info("heartSend [{}]", ctx.channel().id());
         Response response = new Response();
         response.setEventId(request.getEventId());
-        if (StringUtils.isEmpty(request.getRequestId())) {
+        if (CharSequenceUtil.isEmpty(request.getRequestId())) {
             response.setStatus(false);
             response.setMessage("唯一标识不能为空");
             sendWebSocket(ctx, response.toJson());
@@ -257,17 +288,17 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
         Response response = new Response();
         response.setEventId(request.getEventId());
         response.setStatus(false);
-        if (StringUtils.isEmpty(request.getRequestId())) {
+        if (CharSequenceUtil.isEmpty(request.getRequestId())) {
             response.setMessage("唯一标识不能为空");
-        } else if (StringUtils.isEmpty(request.getSenderType())) {
+        } else if (CharSequenceUtil.isEmpty(request.getSenderType())) {
             response.setMessage("发送者类型不能为空");
-        } else if (StringUtils.isEmpty(request.getMessage())) {
+        } else if (CharSequenceUtil.isEmpty(request.getMessage())) {
             response.setMessage("数据对象不能为空");
-        } else if (StringUtils.isEmpty(request.getUserId())) {
+        } else if (CharSequenceUtil.isEmpty(request.getUserId())) {
             response.setMessage("用户id不能为空");
         } else {
             response.setMessage("消息发送失败");
-            if (!StringUtils.isEmpty(request.getReceiverId())) {
+            if (!CharSequenceUtil.isEmpty(request.getReceiverId())) {
                 for (Entry<String, MessageInfo> entry : SendServiceImpl.userWatchMap.entrySet()) {
                     if (!"".equals(entry.getValue().getUserId())) {
                         if (request.getReceiverId().equals(entry.getValue().getUserId() + "-" + entry.getValue().getSenderType())) {
@@ -284,7 +315,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                     }
                 }
             }
-            if (!StringUtils.isEmpty(request.getReceiverType())) {
+            if (!CharSequenceUtil.isEmpty(request.getReceiverType())) {
                 for (Entry<String, MessageInfo> entry : SendServiceImpl.userWatchMap.entrySet()) {
                     if (request.getReceiverType().equals(entry.getValue().getSenderType()) &&
                             ((!request.getUserId().equals(entry.getValue().getUserId())) || (!request.getSenderType().equals(entry.getValue().getSenderType())))
@@ -292,7 +323,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
                         Request serviceRequest = this.setRequestInfo(request);
                         try {
                             entry.getValue().getSendService().send(serviceRequest);
-                            log.info("群发:{}>>>>>>>{}", entry.getKey(), serviceRequest.toString());
+                            log.info("群发:{}>>>>>>>{}", entry.getKey(), serviceRequest);
                         } catch (Exception e) {
                             log.warn("回调发送消息给客户端异常", e);
                         }
@@ -366,27 +397,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     }
 
     /**
-     * 发送Http相应消息
-     *
-     * @param ctx
-     * @param request
-     * @param response
-     */
-    private static void sendHttpResponse(ChannelHandlerContext ctx, FullHttpRequest request, FullHttpResponse response) {
-        log.info("sendHttpResponse [{}]", ctx.channel().id());
-        if (response.status().code() != EnumCode.SUCCESS.getCode()) {
-            ByteBuf buf = Unpooled.copiedBuffer(response.status().toString(), io.netty.util.CharsetUtil.UTF_8);
-            response.content().writeBytes(buf);
-            buf.release();
-            HttpUtil.setContentLength(response, response.content().readableBytes());
-        }
-        ChannelFuture f = ctx.channel().writeAndFlush(response);
-        if ((!HttpUtil.isKeepAlive(request)) || (response.status().code() != EnumCode.SUCCESS.getCode())) {
-            f.addListener(ChannelFutureListener.CLOSE);
-        }
-    }
-
-    /**
      * 发送WebSocket消息
      *
      * @param ctx
@@ -403,16 +413,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     }
 
     /**
-     * 获取文本WebSocket的地址
-     *
-     * @param req
-     * @return
-     */
-    private static String getWebSocketLocation(FullHttpRequest req) {
-        return "ws://" + req.headers().get(HttpHeaderNames.HOST) + WEB_SOCKET_PATH;
-    }
-
-    /**
      * 推出登录（注销）
      *
      * @param ctx
@@ -420,8 +420,8 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<Object> 
     private void logout(ChannelHandlerContext ctx) {
         log.info("logout [{}]", ctx.channel().id());
         MessageInfo info = SendServiceImpl.userWatchMap.get(ctx.channel().id().toString());
-        if (info != null && StringUtils.isNotBlank(info.getUserId()) && checkSenderType(info)) {
-            JEDISUtil.publishMsg("logout", info.getUserId(), 0);
+        if (info != null && CharSequenceUtil.isNotBlank(info.getUserId()) && checkSenderType(info)) {
+            JEDISUtil.publishMsg("logout", info.getUserId());
             log.info("{}---------------注销成功-----{}", ctx.channel().id().toString(), "logout-" + info.getUserId());
         }
     }
